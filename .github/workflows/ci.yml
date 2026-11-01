@@ -1,0 +1,41 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm audit --omit=dev --audit-level=high
+      - run: docker build -t portfolio-app:ci .
+
+  integration:
+    runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ci-only-ephemeral-key-not-used-outside-tests-123456789
+      REDIS_URL: redis://localhost:6379
+      DATABASE_URL: postgresql://portfolio_runtime:local-runtime-only@localhost:55432/portfolio
+      MONGO_URL: mongodb://localhost:27017/graphql_portfolio_ci
+      GRAFANA_PASSWORD: ci-only-grafana-password
+      OTEL_SDK_DISABLED: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: docker compose up --wait postgres redis
+      - run: npm run db:migrate
+        env:
+          DATABASE_URL: postgresql://postgres:local-migration-only@localhost:55432/portfolio
+      - run: npm run test:integration
+      - if: always()
+        run: docker compose down
