@@ -37,5 +37,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:local-migration-only@localhost:55432/portfolio
       - run: npm run test:integration
+      - if: failure()
+        run: docker compose logs --no-color
       - if: always()
         run: docker compose down

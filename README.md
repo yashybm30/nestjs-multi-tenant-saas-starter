@@ -109,10 +109,10 @@ erDiagram
 ```bash
 npm run check              # lint, strict typecheck, unit/API tests, build
 npm run test:integration   # real services must be running
-npm run test:coverage      # measured report; no unmeasured percentage claims
+npm run test:coverage      # combined unit + integration coverage; services required
 ```
 
-Tests run the compiled application so NestJS decorator metadata matches production. Integration tests create isolated identities; they require disposable databases and must never target production.
+Tests run the compiled application so NestJS decorator metadata matches production. Coverage includes compiled application code; bootstrap, external OAuth callbacks and telemetry initialization are excluded and require separate configured verification. Integration tests create isolated identities; they require disposable databases and must never target production.
 
 Set `DATABASE_URL` to the restricted runtime connection and `REDIS_URL` before integration tests. Migrate first. Test JWT keys are supplied within the suites. Tests exercise rotation, replay, logout, invalid input, rate limits, cross-tenant API access, forbidden writes, and database RLS.
 
