@@ -1,0 +1,56 @@
+generator client {
+ provider = "prisma-client-js"
+}
+datasource db {
+ provider = "postgresql"
+ url = env("DATABASE_URL")
+}
+model Tenant {
+ id String @id @default(uuid()) @db.Uuid
+ name String
+ users User[]
+ projects Project[]
+ audits Audit[]
+ createdAt DateTime @default(now())
+}
+model User {
+ id String @id @default(uuid()) @db.Uuid
+ email String @unique
+ password String?
+ googleId String? @unique
+ role String @default("member")
+ tenantId String @db.Uuid
+ tenant Tenant @relation(fields:[tenantId],references:[id])
+ sessions RefreshSession[]
+ createdAt DateTime @default(now())
+}
+model RefreshSession {
+ id String @id @default(uuid()) @db.Uuid
+ userId String @db.Uuid
+ user User @relation(fields:[userId],references:[id])
+ familyId String @db.Uuid
+ tokenHash String @unique
+ expiresAt DateTime
+ consumedAt DateTime?
+ revokedAt DateTime?
+ createdAt DateTime @default(now())
+ @@index([familyId])
+}
+model Project {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ tenant Tenant @relation(fields:[tenantId],references:[id])
+ name String
+ createdAt DateTime @default(now())
+ @@index([tenantId,createdAt])
+}
+model Audit {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ tenant Tenant @relation(fields:[tenantId],references:[id])
+ actorId String
+ action String
+ resourceId String
+ createdAt DateTime @default(now())
+ @@index([tenantId,createdAt])
+}

@@ -1,0 +1,16 @@
+CREATE TABLE "Tenant" ("id" UUID PRIMARY KEY, "name" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE "User" ("id" UUID PRIMARY KEY, "email" TEXT NOT NULL UNIQUE, "password" TEXT, "googleId" TEXT UNIQUE, "role" TEXT NOT NULL DEFAULT 'member' CHECK ("role" IN ('member','admin')), "tenantId" UUID NOT NULL REFERENCES "Tenant"("id"), "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE "RefreshSession" ("id" UUID PRIMARY KEY, "userId" UUID NOT NULL REFERENCES "User"("id"), "familyId" UUID NOT NULL, "tokenHash" TEXT NOT NULL UNIQUE, "expiresAt" TIMESTAMP(3) NOT NULL, "consumedAt" TIMESTAMP(3), "revokedAt" TIMESTAMP(3), "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX "RefreshSession_familyId_idx" ON "RefreshSession"("familyId");
+CREATE TABLE "Project" ("id" UUID PRIMARY KEY, "tenantId" UUID NOT NULL REFERENCES "Tenant"("id"), "name" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX "Project_tenantId_createdAt_idx" ON "Project"("tenantId","createdAt");
+CREATE TABLE "Audit" ("id" UUID PRIMARY KEY, "tenantId" UUID NOT NULL REFERENCES "Tenant"("id"), "actorId" TEXT NOT NULL, "action" TEXT NOT NULL, "resourceId" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX "Audit_tenantId_createdAt_idx" ON "Audit"("tenantId","createdAt");
+ALTER TABLE "Project" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Project" FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_projects ON "Project" USING ("tenantId" = NULLIF(current_setting('app.tenant_id',true),'')::uuid) WITH CHECK ("tenantId" = NULLIF(current_setting('app.tenant_id',true),'')::uuid);
+ALTER TABLE "Audit" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Audit" FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_audit ON "Audit" USING ("tenantId" = NULLIF(current_setting('app.tenant_id',true),'')::uuid) WITH CHECK ("tenantId" = NULLIF(current_setting('app.tenant_id',true),'')::uuid);
+GRANT USAGE ON SCHEMA public TO portfolio_runtime;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO portfolio_runtime;
